@@ -3,7 +3,6 @@ package epamlab.beans;
 
 import epamlab.threads.Bus;
 
-import java.util.List;
 
 public class Station {
 
@@ -13,7 +12,6 @@ public class Station {
     private Bus currentBus;
     private volatile int passengersCount;
     private boolean isBusArrived;
-    private List<Station> stations;
 
     public Station(int number) {
         this.number = number;
@@ -50,10 +48,9 @@ public class Station {
         this.passengersCount = passengersCount;
     }
 
-    public boolean takingBusMonitor(List<Station> stations, Bus currentBus) {
+    public boolean takingBusMonitor(Bus currentBus) {
         this.currentBus = currentBus;
         if (this.currentBus.isAnyEmptySeats() && passengersCount > 0) {
-            this.stations = stations;
             isBusArrived = true;
             return true;
         }
@@ -61,7 +58,6 @@ public class Station {
     }
 
     public void releaseBusMonitor() {
-        stations = null;
         isBusArrived = false;
         synchronized (this.lock) {
             this.lock.notifyAll();
@@ -79,6 +75,10 @@ public class Station {
             releaseBusMonitor();
         }
         return true;
+    }
+
+    public void landing(){
+        currentBus.setOccupancy(currentBus.getOccupancy() - 1);
     }
 
     synchronized public void passengerIn() {

@@ -28,8 +28,7 @@ public class Passenger implements Runnable {
                         e.printStackTrace();
                     }
                 }
-                if (departureStation.boarding()) {
-                    arrivalStation.passengerIn();
+                if (currentStation.boarding()) {
                     inBus = true;
                     log.warn(name + " in bus");
                 }
@@ -42,11 +41,11 @@ public class Passenger implements Runnable {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                arrivalStation.lock.notifyAll();
             }
             inBus = false;
-            log.warn(name + " on arrival station" + arrivalStation.getNumber());
         }
+        arrivalStation.landing();
+        log.warn(name + " on arrival station" + arrivalStation.getNumber());
 
     }
 

@@ -15,7 +15,7 @@ public class Bus implements Runnable {
     private String name;
     private Route route;
     private int capacity;
-    private int occupancy;
+    private volatile int occupancy;
     private int movementSpeed;
     private Station currentStation;
     private boolean isTransportationComplete;
@@ -23,46 +23,37 @@ public class Bus implements Runnable {
     @Override
     public void run() {
 
-        Station currentStationCopy;
         while (!isTransportationComplete) {
             synchronized (this.lock) {
                 try {
-                    lock.wait(movementSpeed * MULTIPLIER);
+                    Thread.sleep(movementSpeed * MULTIPLIER);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            currentStationCopy = route.getStations().get(route.getStations().indexOf(currentStation));
-            synchronized (currentStationCopy.lock) {
-                while (currentStationCopy.isBusArrived()) {
+            synchronized (currentStation.lock) {
+                while (currentStation.isBusArrived()) {
                     try {
-                        currentStationCopy.lock.wait();
+                        currentStation.lock.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
                 log.warn(name + " arrived at station-" + currentStation.getNumber());
-                currentStationCopy.lock.notifyAll();
-                if (currentStationCopy.takingBusMonitor(route.getStations(), this)) {
+                currentStation.lock.notifyAll();
+
+                if (currentStation.takingBusMonitor(this)) {
                     try {
-                        currentStationCopy.lock.wait();
+                        currentStation.lock.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                synchronized (currentStation.lock) {
-                    currentStation.lock.notifyAll();
-                    int passengersOnStation = currentStation.getPassengersCount();
-                    for (int i = 0; i < passengersOnStation; i++) {
-                        occupancy--;
-                        currentStation.passengerOut();
-                    }
-                }
             }
-            occupancy = capacity - getEmptySeats();
+            //occupancy = capacity - getEmptySeats();
             int nextStation = route.getStations().indexOf(currentStation) + 1;
             if (nextStation >= route.getStations().size()) {
-                if (Route.hasPassengers() || occupancy > 0) {
+                if (Route.hasPassengers() && occupancy > 0) {
                     currentStation = route.getStations().get(0);
                 } else {
                     isTransportationComplete = true;
